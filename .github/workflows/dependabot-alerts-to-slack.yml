@@ -6,10 +6,6 @@ on:
   workflow_dispatch: # to have the option to run this ad-hoc
   workflow_call: # to allow other workflows to call this workflow
     secrets:
-      app-id: ${{ vars.DEPENDABOT_ACCESS_APP_ID }}
-      private-key: ${{ secrets.DEPENDABOT_ACCESS_PRIVATE_KEY }}
-      slack_webhook: ${{ secrets.CUSTOMER_INTEGRATIONS_SLACK_WEBHOOK }}
-
       app-id:
         required: true
         description: 'Github App ID'
