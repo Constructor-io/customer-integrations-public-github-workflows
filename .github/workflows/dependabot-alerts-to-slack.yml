@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '30 16 * * *' # every day at 9:30 am PST
   workflow_dispatch: # to have the option to run this ad-hoc
+  workflow_call: # to allow other workflows to call this workflow
 
 jobs:
   main:
