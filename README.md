@@ -23,7 +23,25 @@ jobs:
 
 ## Available Workflows
 
-- `dependabot-alerts-to-slack.yml`: A workflow for sending Dependabot alerts to Slack.
+### `run-lint.yml`
+A reusable workflow for running linting checks on Node.js projects.
+
+**Inputs:**
+- `node-version` (optional): Node.js version to use. Default: `22.18.0`
+- `lint-command` (optional): Lint command to run. Default: `npm run lint`
+
+**Example Usage:**
+```yaml
+jobs:
+  lint:
+    uses: customer-integrations-public-github-workflows/.github/workflows/run-lint.yml@main
+    with:
+      node-version: '20.x'
+      lint-command: 'npm run lint'
+```
+
+### `dependabot-alerts-to-slack.yml`
+A workflow for sending Dependabot alerts to Slack.
 
 ## Adding New Workflows
 
