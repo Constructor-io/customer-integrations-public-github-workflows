@@ -24,6 +24,34 @@ jobs:
 ## Available Workflows
 
 - `dependabot-alerts-to-slack.yml`: A workflow for sending Dependabot alerts to Slack.
+- `build.yml`: A reusable workflow for testing Node.js application builds with configurable build commands and optional artifact uploads.
+
+### Build Workflow
+
+The build workflow allows you to test Node.js application builds in a standardized way.
+
+**Example usage:**
+
+```yaml
+jobs:
+  build:
+    uses: customer-integrations-public-github-workflows/.github/workflows/build.yml@main
+    with:
+      node-version: '20.x'
+      build-command: 'npm run build'
+      upload-artifacts: true
+      artifact-name: 'build-output'
+      artifact-path: 'dist/'
+      artifact-retention-days: 7
+```
+
+**Available inputs:**
+- `node-version` (optional): Node.js version to use (default: '22.18.0')
+- `build-command` (optional): Build command to run (default: 'npm run build')
+- `upload-artifacts` (optional): Whether to upload build artifacts (default: false)
+- `artifact-name` (optional): Name for the build artifact (default: 'build')
+- `artifact-path` (optional): Path to build artifacts to upload (default: 'build/')
+- `artifact-retention-days` (optional): Number of days to retain artifacts (default: 7)
 
 ## Adding New Workflows
 
