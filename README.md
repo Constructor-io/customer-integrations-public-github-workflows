@@ -23,15 +23,18 @@ jobs:
 
 ## Available Workflows
 
-- `dependabot-alerts-to-slack.yml`: A workflow for sending Dependabot alerts to Slack.
-- `build.yml`: A reusable workflow for testing Node.js application builds with configurable build commands and optional artifact uploads.
+### `build.yml`
+A reusable workflow for testing Node.js application builds with configurable build commands and optional artifact uploads.
 
-### Build Workflow
+**Inputs:**
+- `node-version` (optional): Node.js version to use. Default: `22.18.0`
+- `build-command` (optional): Build command to run. Default: `npm run build`
+- `upload-artifacts` (optional): Whether to upload build artifacts. Default: `false`
+- `artifact-name` (optional): Name for the build artifact. Default: `build`
+- `artifact-path` (optional): Path to build artifacts to upload. Default: `build/`
+- `artifact-retention-days` (optional): Number of days to retain artifacts. Default: `7`
 
-The build workflow allows you to test Node.js application builds in a standardized way.
-
-**Example usage:**
-
+**Example Usage:**
 ```yaml
 jobs:
   build:
@@ -45,13 +48,25 @@ jobs:
       artifact-retention-days: 7
 ```
 
-**Available inputs:**
-- `node-version` (optional): Node.js version to use (default: '22.18.0')
-- `build-command` (optional): Build command to run (default: 'npm run build')
-- `upload-artifacts` (optional): Whether to upload build artifacts (default: false)
-- `artifact-name` (optional): Name for the build artifact (default: 'build')
-- `artifact-path` (optional): Path to build artifacts to upload (default: 'build/')
-- `artifact-retention-days` (optional): Number of days to retain artifacts (default: 7)
+### `run-lint.yml`
+A reusable workflow for running linting checks on Node.js projects.
+
+**Inputs:**
+- `node-version` (optional): Node.js version to use. Default: `22.18.0`
+- `lint-command` (optional): Lint command to run. Default: `npm run lint`
+
+**Example Usage:**
+```yaml
+jobs:
+  lint:
+    uses: customer-integrations-public-github-workflows/.github/workflows/run-lint.yml@main
+    with:
+      node-version: '20.x'
+      lint-command: 'npm run lint'
+```
+
+### `dependabot-alerts-to-slack.yml`
+A workflow for sending Dependabot alerts to Slack.
 
 ## Adding New Workflows
 
