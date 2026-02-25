@@ -1,0 +1,100 @@
+name: Dependabot Reviewer Rotation
+
+on:
+  workflow_call:
+    inputs:
+      teams:
+        description: 'Comma-separated team names (e.g., "pdsi,evergreen")'
+        required: true
+        type: string
+    secrets:
+      github-token:
+        description: 'GitHub token with repo permissions (defaults to GITHUB_TOKEN if not provided)'
+        required: false
+
+jobs:
+  assign-reviewer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign reviewer based on rotation
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.github-token || github.token }}
+          script: |
+            // Team to engineers mapping
+            const teamMapping = {
+              'pdsi': ['esevangelista', 'anatopalovic00', 'joesurf', 'NullDev', 'lucas-dolsan', 'fastndead'],
+              // Add other teams as needed
+            };
+
+            // Parse input teams
+            const inputTeams = '${{ inputs.teams }}'.split(',').map(t => t.trim().toLowerCase());
+            console.log(`Input teams: ${inputTeams.join(', ')}`);
+
+            // Merge engineers from all specified teams with deduplication
+            const engineersSet = new Set();
+            const unknownTeams = [];
+
+            for (const team of inputTeams) {
+              if (teamMapping[team]) {
+                teamMapping[team].forEach(eng => engineersSet.add(eng));
+              } else {
+                unknownTeams.push(team);
+              }
+            }
+
+            const engineers = Array.from(engineersSet).sort();
+
+            // If no engineers found (all teams unknown), fall back to default behavior
+            if (engineers.length === 0) {
+              console.log(`No engineers found for teams: ${inputTeams.join(', ')}`);
+              console.log('Falling back to dependabot.yml/CODEOWNERS assignment');
+              return;
+            }
+
+            if (unknownTeams.length > 0) {
+              console.log(`Warning: Unknown teams ignored: ${unknownTeams.join(', ')}`);
+            }
+
+            // Calculate rotation based on week number
+            const now = new Date();
+            const startOfYear = new Date(now.getFullYear(), 0, 1);
+            const weekNumber = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+
+            const assigneeIndex = weekNumber % engineers.length;
+            const assignee = engineers[assigneeIndex];
+
+            console.log(`Week ${weekNumber}: Assigning to ${assignee} (index ${assigneeIndex} of ${engineers.length} engineers)`);
+            console.log(`Engineers in rotation: ${engineers.join(', ')}`);
+
+            // Get PR number from context
+            const prNumber = context.payload.pull_request?.number;
+            if (!prNumber) {
+              console.log('No PR number found in context');
+              return;
+            }
+
+            // Assign reviewer and assignee
+            try {
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                reviewers: [assignee]
+              });
+              console.log(`Requested review from ${assignee}`);
+            } catch (error) {
+              console.log(`Failed to request reviewer: ${error.message}`);
+            }
+
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                assignees: [assignee]
+              });
+              console.log(`Assigned PR to ${assignee}`);
+            } catch (error) {
+              console.log(`Failed to assign: ${error.message}`);
+            }
