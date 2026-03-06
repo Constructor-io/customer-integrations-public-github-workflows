@@ -1,4 +1,4 @@
-module.exports = async ({ github, context, core }) => {
+export default async ({ github, context }) => {
   const team = process.env.TEAM_SLUG;
   const debug = process.env.DEBUG === 'true';
   const org = 'Constructor-io';
@@ -11,10 +11,10 @@ module.exports = async ({ github, context, core }) => {
   let engineers = [];
   try {
     const { data: members } = await github.rest.teams.listMembersInOrg({
-      org: org,
+      org,
       team_slug: team,
     });
-    engineers = members.map(m => m.login).sort();
+    engineers = members.map((m) => m.login).sort();
   } catch (error) {
     console.log(`Failed to fetch team members: ${error.message}`);
     console.log('Falling back to dependabot.yml/CODEOWNERS assignment');
@@ -42,7 +42,9 @@ module.exports = async ({ github, context, core }) => {
   const assignee = engineers[assigneeIndex];
 
   if (debug) {
-    console.log(`Week ${weekNumber}: Assigning to ${assignee} (index ${assigneeIndex} of ${engineers.length} engineers)`);
+    console.log(
+      `Week ${weekNumber}: Assigning to ${assignee} (index ${assigneeIndex} of ${engineers.length} engineers)`,
+    );
   }
 
   // Get PR number from context
@@ -58,7 +60,7 @@ module.exports = async ({ github, context, core }) => {
       owner: context.repo.owner,
       repo: context.repo.repo,
       pull_number: prNumber,
-      reviewers: [assignee]
+      reviewers: [assignee],
     });
     if (debug) {
       console.log(`Requested review from ${assignee}`);
@@ -72,7 +74,7 @@ module.exports = async ({ github, context, core }) => {
       owner: context.repo.owner,
       repo: context.repo.repo,
       issue_number: prNumber,
-      assignees: [assignee]
+      assignees: [assignee],
     });
     if (debug) {
       console.log(`Assigned PR to ${assignee}`);
