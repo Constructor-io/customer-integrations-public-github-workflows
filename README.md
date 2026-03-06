@@ -68,6 +68,38 @@ jobs:
 ### `dependabot-alerts-to-slack.yml`
 A workflow for sending Dependabot alerts to Slack.
 
+### `dependabot-reviewer-rotation.yml`
+Assigns individual engineers to Dependabot PRs on a weekly rotation. Fetches team members directly from GitHub using a GitHub App for authentication.
+
+**Inputs:**
+- `team` (required): GitHub team slug (e.g., `prospect-data-solutions`)
+
+**Secrets:**
+- `github-app-id` (required): GitHub App ID with `read:org` permissions
+- `github-app-private-key` (required): GitHub App private key
+
+**Adding this to your repo:**
+Follow the setup guide: https://constructor.slab.com/posts/how-to-integrate-dependabot-reviewer-rotation-to-your-repository-x75gq8f0
+
+**Caller workflow example:**
+```yaml
+name: Dependabot Reviewer Rotation
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  assign-reviewer:
+    if: github.actor == 'dependabot[bot]'
+    uses: Constructor-io/customer-integrations-public-github-workflows/.github/workflows/dependabot-reviewer-rotation.yml@main
+    with:
+      team: 'prospect-data-solutions'
+    secrets:
+      github-app-id: ${{ vars.APP_ID }}
+      github-app-private-key: ${{ secrets.PRIVATE_KEY }}
+```
+
 ## Adding New Workflows
 
 When adding new workflows to this repository, please follow these guidelines:
