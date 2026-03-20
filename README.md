@@ -68,13 +68,12 @@ jobs:
 ### `dependabot-alerts-to-slack.yml`
 A workflow for sending Dependabot alerts to Slack.
 
-### `dependabot-reviewer-rotation.yml`
+### `dependabot-reviewer-rotation` (Composite Action)
 Assigns individual engineers to Dependabot PRs on a weekly rotation. Fetches team members directly from GitHub using a GitHub App for authentication.
 
 **Inputs:**
 - `team` (required): GitHub team slug (e.g., `prospect-data-solutions`)
-
-**Secrets:**
+- `debug` (optional): Enable debug logging. Default: `false`
 - `github-app-id` (required): GitHub App ID with `read:org` permissions
 - `github-app-private-key` (required): GitHub App private key
 
@@ -92,12 +91,14 @@ on:
 jobs:
   assign-reviewer:
     if: github.actor == 'dependabot[bot]'
-    uses: Constructor-io/customer-integrations-public-github-workflows/.github/workflows/dependabot-reviewer-rotation.yml@main
-    with:
-      team: 'prospect-data-solutions'
-    secrets:
-      github-app-id: ${{ vars.APP_ID }}
-      github-app-private-key: ${{ secrets.PRIVATE_KEY }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Constructor-io/customer-integrations-public-github-workflows/.github/actions/dependabot-reviewer-rotation@main
+        with:
+          team: 'prospect-data-solutions'
+          github-app-id: ${{ vars.APP_ID }}
+          github-app-private-key: ${{ secrets.PRIVATE_KEY }}
 ```
 
 ## Adding New Workflows
