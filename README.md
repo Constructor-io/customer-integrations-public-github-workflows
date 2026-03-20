@@ -85,7 +85,7 @@ Follow the setup guide: https://constructor.slab.com/posts/how-to-integrate-depe
 name: Dependabot Reviewer Rotation
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened]
 
 jobs:
@@ -93,7 +93,6 @@ jobs:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - uses: Constructor-io/customer-integrations-public-github-workflows/.github/actions/dependabot-reviewer-rotation@main
         with:
           team: 'prospect-data-solutions'
