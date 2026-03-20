@@ -32,8 +32,10 @@ jobs:
           private-key: ${{ secrets.github-app-private-key }}
           owner: Constructor-io
 
-      - name: Checkout
+      - name: Checkout shared workflows repo
         uses: actions/checkout@v4
+        with:
+          repository: Constructor-io/customer-integrations-public-github-workflows
 
       - name: Assign reviewer based on rotation
         uses: actions/github-script@v7
@@ -43,5 +45,5 @@ jobs:
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
-            const { default: script } = await import('./.github/scripts/dependabot-reviewer-rotation.js');
+            const { default: script } = await import(`${process.env.GITHUB_WORKSPACE}/.github/scripts/dependabot-reviewer-rotation.js`);
             await script({ github, context });
