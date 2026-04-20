@@ -1,0 +1,30 @@
+name: Run Tests
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '22.18.0'
+      test-command:
+        description: 'Test command to run'
+        required: false
+        type: string
+        default: 'npm test'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Set up node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: ${{ inputs.test-command }}
