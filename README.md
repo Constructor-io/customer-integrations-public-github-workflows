@@ -18,7 +18,7 @@ To use a workflow from this repository in another project, you can reference it 
 ```yaml
 jobs:
   job_name:
-    uses: customer-integrations-public-github-workflows/.github/workflows/workflow-name.yml@main
+    uses: Constructor-io/customer-integrations-public-github-workflows/.github/workflows/workflow-name.yml@main
 ```
 
 ## Available Workflows
@@ -38,7 +38,7 @@ A reusable workflow for testing Node.js application builds with configurable bui
 ```yaml
 jobs:
   build:
-    uses: customer-integrations-public-github-workflows/.github/workflows/build.yml@main
+    uses: Constructor-io/customer-integrations-public-github-workflows/.github/workflows/build.yml@main
     with:
       node-version: '20.x'
       build-command: 'npm run build'
@@ -46,6 +46,23 @@ jobs:
       artifact-name: 'build-output'
       artifact-path: 'dist/'
       artifact-retention-days: 7
+```
+
+### `test.yml`
+A reusable workflow for running tests on Node.js projects.
+
+**Inputs:**
+- `node-version` (optional): Node.js version to use. Default: `22.18.0`
+- `test-command` (optional): Test command to run. Default: `npm test`
+
+**Example Usage:**
+```yaml
+jobs:
+  test:
+    uses: Constructor-io/customer-integrations-public-github-workflows/.github/workflows/test.yml@main
+    with:
+      node-version: '20.x'
+      test-command: 'npm test'
 ```
 
 ### `run-lint.yml`
@@ -59,7 +76,7 @@ A reusable workflow for running linting checks on Node.js projects.
 ```yaml
 jobs:
   lint:
-    uses: customer-integrations-public-github-workflows/.github/workflows/run-lint.yml@main
+    uses: Constructor-io/customer-integrations-public-github-workflows/.github/workflows/run-lint.yml@main
     with:
       node-version: '20.x'
       lint-command: 'npm run lint'
