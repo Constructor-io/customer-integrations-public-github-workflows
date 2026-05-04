@@ -25,13 +25,8 @@ runs:
         REPO_NAME: ${{ github.repository }}
         DEBUG: ${{ inputs.debug }}
       run: |
-        if [ -z "$PR_URL" ]; then
-          PR_URL="https://github.com/${REPO_NAME}/pulls"
-          MESSAGE_NOTE=" (test run - no PR context)"
-        fi
-
         PAYLOAD=$(jq -n \
-          --arg text "<!subteam^${SLACK_GROUP_ID}> A Dependabot PR has been opened in ${REPO_NAME}, please check it out: ${PR_URL}${MESSAGE_NOTE}" \
+          --arg text "<!subteam^${SLACK_GROUP_ID}> A Dependabot PR has been opened in ${REPO_NAME}, please check it out: ${PR_URL}" \
           '{text: $text, unfurl_links: false, unfurl_media: false}')
 
         if [ "$DEBUG" = "true" ]; then
