@@ -1,0 +1,49 @@
+name: 'Dependabot Slack Notify'
+description: 'Sends a Slack notification mentioning the on-call group when a Dependabot PR is opened'
+
+inputs:
+  slack-webhook:
+    description: 'Slack Incoming Webhook URL'
+    required: true
+  slack-group-id:
+    description: 'Slack User Group ID to mention (e.g., S08MEHCFWNM)'
+    required: true
+  debug:
+    description: 'If true, print payload instead of posting to Slack'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Send Slack notification
+      shell: bash
+      env:
+        SLACK_WEBHOOK: ${{ inputs.slack-webhook }}
+        SLACK_GROUP_ID: ${{ inputs.slack-group-id }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        REPO_NAME: ${{ github.repository }}
+        DEBUG: ${{ inputs.debug }}
+      run: |
+        PAYLOAD=$(jq -n \
+          --arg text "<!subteam^${SLACK_GROUP_ID}> A Dependabot PR has been opened in ${REPO_NAME}, please check it out: ${PR_URL}" \
+          '{text: $text, unfurl_links: false, unfurl_media: false}')
+
+        if [ "$DEBUG" = "true" ]; then
+          echo "DEBUG: Would post the following payload to Slack:"
+          echo "$PAYLOAD"
+          exit 0
+        fi
+
+        RESPONSE=$(curl --silent --show-error --fail \
+          -X POST \
+          -H 'Content-type: application/json' \
+          --data "$PAYLOAD" \
+          "$SLACK_WEBHOOK")
+
+        echo "Slack response: $RESPONSE"
+
+        if [ "$RESPONSE" != "ok" ]; then
+          echo "::error::Slack webhook returned an unexpected response: $RESPONSE"
+          exit 1
+        fi

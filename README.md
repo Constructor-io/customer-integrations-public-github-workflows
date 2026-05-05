@@ -85,36 +85,31 @@ jobs:
 ### `dependabot-alerts-to-slack.yml`
 A workflow for sending Dependabot alerts to Slack.
 
-### `dependabot-reviewer-rotation` (Composite Action)
-Assigns individual engineers to Dependabot PRs on a weekly rotation. Fetches team members directly from GitHub using a GitHub App for authentication.
+### `dependabot-slack-notify` (Composite Action)
+Sends a Slack notification mentioning the on-call group when a Dependabot PR is opened.
 
 **Inputs:**
-- `team` (required): GitHub team slug (e.g., `prospect-data-solutions`)
-- `debug` (optional): Enable debug logging. Default: `false`
-- `github-app-id` (required): GitHub App ID with `read:org` permissions
-- `github-app-private-key` (required): GitHub App private key
-
-**Adding this to your repo:**
-Follow the setup guide: https://constructor.slab.com/posts/how-to-integrate-dependabot-reviewer-rotation-to-your-repository-x75gq8f0
+- `slack-webhook` (required): Slack Incoming Webhook URL
+- `slack-group-id` (required): Slack User Group ID to mention (e.g., `S08MEHCFWNM`)
+- `debug` (optional): If `true`, prints the payload without posting to Slack. Default: `false`
 
 **Caller workflow example:**
 ```yaml
-name: Dependabot Reviewer Rotation
+name: Dependabot Slack Notify
 
 on:
   pull_request_target:
     types: [opened]
 
 jobs:
-  assign-reviewer:
+  notify-slack:
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: Constructor-io/customer-integrations-public-github-workflows/.github/actions/dependabot-reviewer-rotation@main
+      - uses: Constructor-io/customer-integrations-public-github-workflows/.github/actions/dependabot-slack-notify@main
         with:
-          team: 'prospect-data-solutions'
-          github-app-id: ${{ vars.APP_ID }}
-          github-app-private-key: ${{ secrets.PRIVATE_KEY }}
+          slack-webhook: ${{ secrets.DEPENDABOT_SLACK_WEBHOOK }}
+          slack-group-id: 'S08MEHCFWNM'  # @hey-prospect-data-solutions
 ```
 
 ## Adding New Workflows
