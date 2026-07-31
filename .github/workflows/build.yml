@@ -32,6 +32,11 @@ on:
         required: false
         type: number
         default: 7
+      fetch-depth:
+        description: 'Number of commits to fetch (0 = full history)'
+        required: false
+        type: number
+        default: 0
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,7 +44,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ inputs.fetch-depth }}
       - name: Set up node
         uses: actions/setup-node@v4
         with:
