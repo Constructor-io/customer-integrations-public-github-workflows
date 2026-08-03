@@ -33,6 +33,7 @@ A reusable workflow for testing Node.js application builds with configurable bui
 - `artifact-name` (optional): Name for the build artifact. Default: `build`
 - `artifact-path` (optional): Path to build artifacts to upload. Default: `build/`
 - `artifact-retention-days` (optional): Number of days to retain artifacts. Default: `7`
+- `fetch-depth` (optional): Number of commits to fetch (0 = full history). Default: `0`
 
 **Example Usage:**
 ```yaml
