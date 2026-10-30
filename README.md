@@ -84,7 +84,33 @@ jobs:
 ```
 
 ### `dependabot-alerts-to-slack.yml`
-A workflow for sending Dependabot alerts to Slack.
+A workflow for sending Dependabot alerts to Slack. By default it posts up to 10 open alerts of the calling repository. In a monorepo, set `paths` to post only alerts for manifests under the given folders.
+
+**Inputs:**
+- `paths` (optional): Comma-separated folder prefixes with trailing `/` (e.g. `svc_a/,svc_b/`). If set, open alerts for manifests under these folders are listed in one message with the total count, up to `max-lines`, sorted by severity. Default: `''` (repo-wide, up to 10 alerts)
+- `title` (optional): Message title, used only with `paths`. Default: `Dependabot alerts`
+- `max-lines` (optional): Max alerts listed, used only with `paths`. Default: `40`
+
+**Secrets:**
+- `github-app-id` (required): GitHub App ID
+- `github-app-private-key` (required): GitHub App private key
+- `slack-webhook` (required): Slack Incoming Webhook URL
+
+**Example Usage:**
+```yaml
+jobs:
+  dependabot-alerts:
+    uses: Constructor-io/customer-integrations-public-github-workflows/.github/workflows/dependabot-alerts-to-slack.yml@main
+    with:
+      paths: 'svc_a/,svc_b/'
+      title: 'My team Dependabot digest'
+    secrets:
+      github-app-id: ${{ vars.DEPENDABOT_PRIVATE_REPOS_ACCESS_APP_ID }}
+      github-app-private-key: ${{ secrets.DEPENDABOT_PRIVATE_REPOS_ACCESS_PRIVATE_KEY }}
+      slack-webhook: ${{ secrets.DEPENDABOT_SLACK_WEBHOOK }}
+```
+
+Keep the trailing `/` in `paths`: `svc_a` would also match `svc_a_tools/`.
 
 ### `dependabot-slack-notify` (Composite Action)
 Sends a Slack notification mentioning the on-call group when a Dependabot PR is opened.

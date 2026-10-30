@@ -2,6 +2,22 @@ name: 'Check for Dependabot alerts & send them to Slack'
 
 on:
   workflow_call: # to allow other workflows to call this workflow
+    inputs:
+      paths:
+        type: string
+        required: false
+        default: ''
+        description: 'Comma-separated folder prefixes with trailing "/" (e.g. svc_a/,svc_b/). If set, only alerts for manifests under these folders are posted (monorepos).'
+      title:
+        type: string
+        required: false
+        default: 'Dependabot alerts'
+        description: 'Message title when paths is set'
+      max-lines:
+        type: number
+        required: false
+        default: 40
+        description: 'Max alerts listed when paths is set'
     secrets:
       github-app-id:
         required: true
@@ -25,7 +41,43 @@ jobs:
 
       # X.X.X - Latest version available at: https://github.com/kunalnagarco/action-cve/releases
       - uses: kunalnagarco/action-cve@v1.13.2
+        if: inputs.paths == ''
         with:
           token: ${{ steps.app-token.outputs.token }}
           slack_webhook: ${{ secrets.slack-webhook }}
           count: 10
+
+      - name: Post alerts for selected paths
+        if: inputs.paths != ''
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
+          PATHS: ${{ inputs.paths }}
+          TITLE: ${{ inputs.title }}
+          MAX_LINES: ${{ inputs.max-lines }}
+        run: |
+          set -euo pipefail
+          payload=$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/dependabot/alerts?state=open&per_page=100" --jq '.[]' |
+              jq -s \
+                --arg title "$TITLE" \
+                --arg paths "$PATHS" \
+                --arg alerts_url "https://github.com/${GITHUB_REPOSITORY}/security/dependabot" \
+                --argjson max "$MAX_LINES" '
+                def esc: gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+                def rank: {"critical": 0, "high": 1, "medium": 2, "low": 3}[. // ""] // 4;
+                ($paths | split(",") | map(gsub("^\\s+|\\s+$"; "") | select(length > 0))) as $p
+                | [.[] | select((.dependency.manifest_path // "") as $m | any($p[]; . as $x | $m | startswith($x)))]
+                | sort_by((.security_advisory.severity | rank), (.dependency.package.name | ascii_downcase))
+                | length as $n
+                | if $n == 0 then
+                    {text: "*\($title | esc)*: no open alerts under \($paths | esc)"}
+                  else
+                    {text: (
+                      ["*\($title | esc)*: \($n) open"]
+                      + (.[:$max] | map("• <\(.html_url)|#\(.number)> \(.security_advisory.severity) `\(.dependency.package.name | esc)` in `\(.dependency.manifest_path | esc)`: \(.security_advisory.summary | esc), fix: \(.security_vulnerability.first_patched_version.identifier // "none" | esc)"))
+                      + (if $n > $max then ["…and \($n - $max) more: <\($alerts_url)|all Dependabot alerts>"] else [] end)
+                      | join("\n"))}
+                  end'
+          )
+          printf '%s\n' "$payload" | curl -fsS -X POST -H 'Content-Type: application/json' --data @- "$SLACK_WEBHOOK"
