@@ -16,8 +16,8 @@ on:
       max-lines:
         type: number
         required: false
-        default: 40
-        description: 'Max alerts listed when paths is set'
+        default: 25
+        description: 'Max alerts listed when paths is set; keeps the message under Slack''s ~4,000-character split'
     secrets:
       github-app-id:
         required: true
@@ -75,7 +75,7 @@ jobs:
                   else
                     {text: (
                       ["*\($title | esc)*: \($n) open"]
-                      + (.[:$max] | map("• <\(.html_url)|#\(.number)> \(.security_advisory.severity) `\(.dependency.package.name | esc)` in `\(.dependency.manifest_path | esc)`: \(.security_advisory.summary | esc), fix: \(.security_vulnerability.first_patched_version.identifier // "none" | esc)"))
+                      + (.[:$max] | map("• <\(.html_url)|#\(.number)> \(.security_advisory.severity) `\(.dependency.package.name | esc)` in `\(.dependency.manifest_path | esc)`, fix: \(.security_vulnerability.first_patched_version.identifier // "none" | esc)"))
                       + (if $n > $max then ["…and \($n - $max) more: <\($alerts_url)|all Dependabot alerts>"] else [] end)
                       | join("\n"))}
                   end'

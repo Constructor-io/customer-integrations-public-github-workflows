@@ -89,7 +89,7 @@ A workflow for sending Dependabot alerts to Slack. By default it posts up to 10 
 **Inputs:**
 - `paths` (optional): Comma-separated folder prefixes with trailing `/` (e.g. `svc_a/,svc_b/`). If set, open alerts for manifests under these folders are listed in one message with the total count, up to `max-lines`, sorted by severity. Default: `''` (repo-wide, up to 10 alerts)
 - `title` (optional): Message title, used only with `paths`. Default: `Dependabot alerts`
-- `max-lines` (optional): Max alerts listed, used only with `paths`. Default: `40`
+- `max-lines` (optional): Max alerts listed, used only with `paths`. Default: `25`
 
 **Secrets:**
 - `github-app-id` (required): GitHub App ID
