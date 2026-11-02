@@ -2,6 +2,22 @@ name: 'Check for Dependabot alerts & send them to Slack'
 
 on:
   workflow_call: # to allow other workflows to call this workflow
+    inputs:
+      paths:
+        type: string
+        required: false
+        default: ''
+        description: 'Comma-separated folder prefixes with trailing "/" (e.g. svc_a/,svc_b/). If set, only alerts for manifests under these folders are posted (monorepos).'
+      title:
+        type: string
+        required: false
+        default: 'Dependabot alerts'
+        description: 'Message title when paths is set'
+      max-lines:
+        type: number
+        required: false
+        default: 25
+        description: 'Max advisory lines listed when paths is set (the message is also capped at ~3,800 characters to stay under Slack''s ~4,000-character split)'
     secrets:
       github-app-id:
         required: true
@@ -25,7 +41,65 @@ jobs:
 
       # X.X.X - Latest version available at: https://github.com/kunalnagarco/action-cve/releases
       - uses: kunalnagarco/action-cve@v1.13.2
+        if: inputs.paths == ''
         with:
           token: ${{ steps.app-token.outputs.token }}
           slack_webhook: ${{ secrets.slack-webhook }}
           count: 10
+
+      - name: Post alerts for selected paths
+        if: inputs.paths != ''
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
+          PATHS: ${{ inputs.paths }}
+          TITLE: ${{ inputs.title }}
+          MAX_LINES: ${{ inputs.max-lines }}
+        run: |
+          set -euo pipefail
+          # One line per advisory, newest alert links first; stops adding lines at ~3,800 characters
+          # so Slack does not split the message (its limit is ~4,000).
+          msg=$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/dependabot/alerts?state=open&per_page=100" --jq '.[]' |
+              jq -s -r \
+                --arg title "$TITLE" \
+                --arg paths "$PATHS" \
+                --arg repo "$GITHUB_REPOSITORY" \
+                --argjson max "$MAX_LINES" \
+                --argjson budget 3800 \
+                --argjson sumlen 70 '
+                def esc: gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+                def rank: {"critical": 0, "high": 1, "medium": 2, "low": 3}[. // ""] // 4;
+                def emo: {"critical": ":red_circle:", "high": ":large_orange_circle:", "medium": ":large_yellow_circle:", "low": ":white_circle:"}[. // ""] // ":white_circle:";
+                def trunc($n): if length > $n then .[0:$n] + "…" else . end;
+                ($paths | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) as $p
+                | [.[] | select((.dependency.manifest_path // "") as $m | any($p[]; . as $x | $m | startswith($x)))] as $alerts
+                | ($alerts | length) as $total
+                | if $total == 0 then
+                    "*\($title | esc)*: no open alerts under \($p | join(", ") | esc)"
+                  else
+                    (["critical", "high", "medium", "low"]
+                      | map(. as $s | ($alerts | map(select(.security_advisory.severity == $s)) | length) as $c
+                            | select($c > 0) | "\($s | emo) \($c) \($s)")
+                      | join(" · ")) as $counts
+                    | ($alerts
+                        | group_by(.security_advisory.ghsa_id)
+                        | sort_by((.[0].security_advisory.severity | rank), (.[0].dependency.package.name | ascii_downcase), .[0].security_advisory.ghsa_id)
+                        | map((sort_by(-.number)) as $g
+                              | "• \($g[0].security_advisory.severity | emo) `\($g[0].dependency.package.name | esc)` \($g[0].security_advisory.summary // "" | trunc($sumlen) | esc), fix: \($g[0].security_vulnerability.first_patched_version.identifier // "none" | esc) — "
+                                + ($g | map("<\(.html_url)|#\(.number)>") | join(" ")))) as $lines
+                    | ($lines | length) as $n
+                    | "*\($title | esc)*: \($total) open alerts, \($n) advisories — \($counts)" as $header
+                    | (reduce $lines[:$max][] as $l ({out: [], len: ($header | length)};
+                        if .full then .
+                        elif .len + 1 + ($l | length) > $budget then .full = true
+                        else .out += [$l] | .len += 1 + ($l | length) end)
+                      | .out) as $shown
+                    | ([$header] + $shown
+                       + (if ($shown | length) < $n
+                          then ["…and \($n - ($shown | length)) more: <https://github.com/\($repo)/security/dependabot?q=is%3Aopen|all open alerts>"]
+                          else [] end))
+                    | join("\n")
+                  end'
+          )
+          jq -n --arg text "$msg" '{text: $text}' | curl -fsS -X POST -H 'Content-Type: application/json' --data @- "$SLACK_WEBHOOK"
