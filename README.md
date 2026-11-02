@@ -87,9 +87,9 @@ jobs:
 A workflow for sending Dependabot alerts to Slack. By default it posts up to 10 open alerts of the calling repository. In a monorepo, set `paths` to post only alerts for manifests under the given folders.
 
 **Inputs:**
-- `paths` (optional): Comma-separated folder prefixes with trailing `/` (e.g. `svc_a/,svc_b/`). If set, open alerts for manifests under these folders are listed in one message with the total count, up to `max-lines`, sorted by severity. Default: `''` (repo-wide, up to 10 alerts)
+- `paths` (optional): Comma-separated folder prefixes with trailing `/` (e.g. `svc_a/,svc_b/`). If set, open alerts for manifests under these folders are posted as one digest message (see below). Default: `''` (repo-wide, up to 10 alerts, unchanged)
 - `title` (optional): Message title, used only with `paths`. Default: `Dependabot alerts`
-- `max-lines` (optional): Max alerts listed, used only with `paths`. Default: `25`
+- `max-lines` (optional): Max advisory lines listed, used only with `paths`. Default: `25`
 
 **Secrets:**
 - `github-app-id` (required): GitHub App ID
@@ -111,6 +111,13 @@ jobs:
 ```
 
 Keep the trailing `/` in `paths`: `svc_a` would also match `svc_a_tools/`.
+
+**Digest format (with `paths`):**
+- Title line: total open alerts, number of advisories, and alert counts per severity.
+- One line per advisory: severity emoji (:red_circle: critical, :large_orange_circle: high, :large_yellow_circle: medium, :white_circle: low/unknown), package, summary cut to 70 characters, fixed version, and links to all its alerts (newest first).
+- Sorted by severity, then package name.
+- Lines stop at `max-lines` or ~3,800 characters, whichever comes first, so Slack does not split the message. Cut lines are replaced by an "…and N more" link to all open alerts.
+- No matching alerts: posts "no open alerts under …".
 
 ### `dependabot-slack-notify` (Composite Action)
 Sends a Slack notification mentioning the on-call group when a Dependabot PR is opened.
